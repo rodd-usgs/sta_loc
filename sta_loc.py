@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 from obspy import UTCDateTime, Stream, read_events
 from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees
@@ -18,7 +18,7 @@ parser.add_argument("-s", "--stas", action="store", dest="stations",
                     required=True, help="Stations for Phase Arrivals")
 
 parser.add_argument("-p", "--phase", action="store", dest="phases",
-                    required=False, default=False)
+                    nargs='+', required=False, default=False)
 
 parser.add_argument("-l", "--loc", action="store", dest="loc",
                     required=False, default="00")
@@ -27,6 +27,7 @@ parser.add_argument("-c", "--chan", action="store", dest="chan",
                     required=False, default="LHZ")
 
 args = parser.parse_args()
+print(args.phases)
 
 ev_client = Client('USGS')
 
@@ -34,8 +35,7 @@ try:
         cat = ev_client.get_events(eventid = args.event_id)
 except:
         sys.exit('No event available')
-
-timestring = str(cat[0].origins[0].time).split('T')
+timestring = cat[0].origins[0].time.strftime("%Y-%m-%d %H:%M:%S")
 timestring = "Event: {} {}".format(timestring[0], timestring[1].split('.')[0])
 locstring = "{:.2f}, {:.2f}, {:.2f}".format(cat[0].origins[0].latitude,
         cat[0].origins[0].longitude, cat[0].origins[0].depth/1000)
