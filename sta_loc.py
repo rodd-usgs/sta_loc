@@ -4,6 +4,7 @@ from obspy import UTCDateTime, Stream, read_events
 from obspy.geodetics.base import gps2dist_azimuth, kilometer2degrees
 from obspy.clients.fdsn import Client
 from obspy.taup import TauPyModel
+import matplotlib.pyplot as plt
 import argparse
 
 parser = argparse.ArgumentParser(description='Get Predicted Phase Arrivals')
@@ -27,7 +28,6 @@ parser.add_argument("-c", "--chan", action="store", dest="chan",
                     required=False, default="LHZ")
 
 args = parser.parse_args()
-print(args.phases)
 
 ev_client = Client('USGS')
 
@@ -43,24 +43,20 @@ print("{} {}".format(timestring, locstring))
 
 st_client = Client('IRIS')
 stas = st_client.get_stations(network=args.nets, station=args.stations,
-        level='response', starttime=cat[0].origins[0].time)
+        level='response', starttime=cat[0].origins[0].time, channel=args.chan, location=args.loc)
 
 model = TauPyModel(model='iasp91')
-
 for net in stas:
     for sta in net:
-        coords = stas.get_coordinates("{}.{}.{}.{}".format(net.code, sta.code, args.loc, args.chan))
-        (dis, azi, bazi) = gps2dist_azimuth(coords['latitude'], coords['longitude'],
+        (dis, azi, bazi) = gps2dist_azimuth(sta._latitude, sta._longitude,
                 cat[0].origins[0].latitude, cat[0].origins[0].longitude)
         deg = kilometer2degrees(dis/1000.)
         if args.phases:
             arrivals = model.get_travel_times(source_depth_in_km = cat[0].origins[0].depth/1000.,
-                    distance_in_degree=deg, phase_list=args.phases,
-                    receiver_depth_in_km = coords['local_depth']/1000.)
+                    distance_in_degree=deg, phase_list=args.phases)
         else:
             arrivals = model.get_travel_times(source_depth_in_km = cat[0].origins[0].depth/1000.,
-                    distance_in_degree=deg, receiver_depth_in_km = coords['local_depth']/1000.)
-
+                    distance_in_degree=deg)
         if len(arrivals) > 0:
             print("{}_{} Arrivals\n---------------------".format(net.code, sta.code))
             for arrival in arrivals:
